@@ -835,6 +835,25 @@ typedef struct
 #pragma pack()
 #endif
 
+#pragma pack(1)
+typedef struct
+{
+	uint16_t cmdcode;
+#define MSG_VERSION_QUERY 0x000
+#define MSG_ECHO 0x801
+#define MSG_DUMP_BUFFER 0x802
+#define MSG_SEND_COMMAND 0x803
+#define MSG_READ_FILE 0x804
+#define MSG_SEND_FILE 0x805
+#define MSG_CRC 0x807
+#define MSG_ACK 0x808
+#define MSG_REJECT 0x809
+	uint16_t magic; // always 0x1234
+	uint32_t size;
+	uint32_t loadaddr; // 0x0 for commands, 0x09000000 for files
+} legacyCMD;
+#pragma pack()
+
 static THREAD_T th_event_handler = THREAD_T_NULL;
 struct collection listeners;
 static mutex_t listener_mutex;
@@ -998,24 +1017,33 @@ static void irecv_load_device_info_from_iboot_string(irecv_client_t client, cons
 	if (ptr != NULL)
 	{
 		sscanf(ptr, "CPID:%x", &client->device_info.cpid);
+		client->device_info.have_cpid = 1;
+	}
+	else
+	{
+		// early iOS 1 doesn't identify itself
+		client->device_info.cpid = 0x8900;
 	}
 
 	ptr = strstr(iboot_string, "CPRV:");
 	if (ptr != NULL)
 	{
 		sscanf(ptr, "CPRV:%x", &client->device_info.cprv);
+		client->device_info.have_cprv = 1;
 	}
 
 	ptr = strstr(iboot_string, "CPFM:");
 	if (ptr != NULL)
 	{
 		sscanf(ptr, "CPFM:%x", &client->device_info.cpfm);
+		client->device_info.have_cpfm = 1;
 	}
 
 	ptr = strstr(iboot_string, "SCEP:");
 	if (ptr != NULL)
 	{
 		sscanf(ptr, "SCEP:%x", &client->device_info.scep);
+		client->device_info.have_scep = 1;
 	}
 
 	ptr = strstr(iboot_string, "BDID:");
@@ -1024,18 +1052,21 @@ static void irecv_load_device_info_from_iboot_string(irecv_client_t client, cons
 		uint64_t bdid = 0;
 		sscanf(ptr, "BDID:%" SCNx64, &bdid);
 		client->device_info.bdid = (unsigned int)bdid;
+		client->device_info.have_bdid = 1;
 	}
 
 	ptr = strstr(iboot_string, "ECID:");
 	if (ptr != NULL)
 	{
 		sscanf(ptr, "ECID:%" SCNx64, &client->device_info.ecid);
+		client->device_info.have_ecid = 1;
 	}
 
 	ptr = strstr(iboot_string, "IBFL:");
 	if (ptr != NULL)
 	{
 		sscanf(ptr, "IBFL:%x", &client->device_info.ibfl);
+		client->device_info.have_ibfl = 1;
 	}
 
 	char tmp[256];
@@ -1962,6 +1993,83 @@ static int iokit_usb_bulk_transfer(irecv_client_t client,
 
 	return IRECV_E_USB_INTERFACE;
 }
+
+static int iokit_usb_interrupt_transfer(irecv_client_t client,
+										unsigned char endpoint,
+										unsigned char *data,
+										int length,
+										int *transferred,
+										unsigned int timeout)
+{
+	IOReturn result;
+	IOUSBInterfaceInterface300 **intf = client->usbInterface;
+	UInt32 size = length;
+	UInt8 isUSBIn = (endpoint & kUSBbEndpointDirectionMask) != 0;
+	UInt8 numEndpoints;
+
+	if (!intf)
+		return IRECV_E_USB_INTERFACE;
+
+	result = (*intf)->GetNumEndpoints(intf, &numEndpoints);
+
+	if (result != kIOReturnSuccess)
+		return IRECV_E_USB_INTERFACE;
+
+	for (UInt8 pipeRef = 0; pipeRef <= numEndpoints; pipeRef++)
+	{
+		UInt8 direction = 0;
+		UInt8 number = 0;
+		UInt8 transferType = 0;
+		UInt16 maxPacketSize = 0;
+		UInt8 interval = 0;
+
+		result = (*intf)->GetPipeProperties(intf, pipeRef, &direction, &number, &transferType, &maxPacketSize, &interval);
+		if (result != kIOReturnSuccess)
+			continue;
+
+		if (direction == 3)
+			direction = isUSBIn;
+
+		if (number != (endpoint & ~kUSBbEndpointDirectionMask) || direction != isUSBIn)
+			continue;
+
+		// Just because
+		result = (*intf)->GetPipeStatus(intf, pipeRef);
+		switch (result)
+		{
+		case kIOReturnSuccess:
+			break;
+		case kIOReturnNoDevice:
+			return IRECV_E_NO_DEVICE;
+		case kIOReturnNotOpen:
+			return IRECV_E_UNABLE_TO_CONNECT;
+		default:
+			return IRECV_E_USB_STATUS;
+		}
+
+		// Do the transfer
+		if (isUSBIn)
+		{
+			result = (*intf)->ReadPipeTO(intf, pipeRef, data, &size, timeout, timeout);
+			if (result != kIOReturnSuccess)
+				return IRECV_E_PIPE;
+			*transferred = size;
+
+			return IRECV_E_SUCCESS;
+		}
+		else
+		{
+			result = (*intf)->WritePipeTO(intf, pipeRef, data, size, timeout, timeout);
+			if (result != kIOReturnSuccess)
+				return IRECV_E_PIPE;
+			*transferred = size;
+
+			return IRECV_E_SUCCESS;
+		}
+	}
+
+	return IRECV_E_USB_INTERFACE;
+}
 #endif
 #endif
 
@@ -1997,6 +2105,37 @@ int irecv_usb_bulk_transfer(irecv_client_t client,
 		ret = 0;
 	}
 	ret = (ret == 0) ? -1 : 0;
+#endif
+
+	return ret;
+#endif
+}
+
+IRECV_API int irecv_usb_interrupt_transfer(irecv_client_t client,
+										   unsigned char endpoint,
+										   unsigned char *data,
+										   int length,
+										   int *transferred,
+										   unsigned int timeout)
+{
+#ifdef USE_DUMMY
+	return IRECV_E_UNSUPPORTED;
+#else
+	int ret;
+
+#ifndef _WIN32
+#ifdef HAVE_IOKIT
+	return iokit_usb_interrupt_transfer(client, endpoint, data, length, transferred, timeout);
+#else
+	ret = libusb_interrupt_transfer(client->handle, endpoint, data, length, transferred, timeout);
+	if (ret < 0)
+	{
+		libusb_clear_halt(client->handle, endpoint);
+	}
+#endif
+#else
+	// win32
+	return IRECV_E_UNSUPPORTED;
 #endif
 
 	return ret;
@@ -3894,6 +4033,8 @@ irecv_error_t irecv_device_event_unsubscribe(irecv_device_event_context_t contex
 #ifdef HAVE_IOKIT
 		if (iokit_runloop)
 		{
+			while (!CFRunLoopIsWaiting(iokit_runloop))
+				usleep(420);
 			CFRunLoopStop(iokit_runloop);
 			iokit_runloop = NULL;
 		}
@@ -3932,7 +4073,7 @@ irecv_error_t irecv_device_event_unsubscribe(irecv_device_event_context_t contex
 #endif
 }
 
-irecv_error_t irecv_close(irecv_client_t client)
+static irecv_error_t irecv_cleanup(irecv_client_t client)
 {
 #ifdef USE_DUMMY
 	return IRECV_E_UNSUPPORTED;
@@ -3982,13 +4123,22 @@ irecv_error_t irecv_close(irecv_client_t client)
 		free(client->device_info.serial_string);
 		free(client->device_info.ap_nonce);
 		free(client->device_info.sep_nonce);
-
-		free(client);
-		client = NULL;
 	}
 
 	return IRECV_E_SUCCESS;
 #endif
+}
+
+irecv_error_t irecv_close(irecv_client_t client)
+{
+	irecv_error_t ret = IRECV_E_SUCCESS;
+	if (client)
+	{
+		ret = irecv_cleanup(client);
+		free(client);
+		client = NULL;
+	}
+	return ret;
 }
 
 void irecv_set_debug_level(int level)
@@ -4025,6 +4175,43 @@ static irecv_error_t irecv_send_command_raw(irecv_client_t client, const char *c
 	if (length >= 0x100)
 	{
 		return IRECV_E_INVALID_INPUT;
+	}
+
+	if (length > 0 && client->device_info.cpid == 0x8900 && !client->device_info.ecid)
+	{
+		int bytes = 0;
+		irecv_error_t error = 0;
+#ifdef DEBUG
+		uint8_t buf[0x100] = {0x00, 0x00, 0x34, 0x12}; // ask how large commands should be
+		if ((error = irecv_usb_interrupt_transfer(client, 0x04, &buf[0], 4, &bytes, USB_TIMEOUT)))
+			return error;
+		if ((error = irecv_usb_interrupt_transfer(client, 0x83, &buf[0], sizeof(buf), &bytes, USB_TIMEOUT)))
+			return error;
+		if (bytes != sizeof(legacyCMD))
+			return IRECV_E_UNKNOWN_ERROR;
+#endif
+		char cmdstr[0x100] = {};
+		if (length & 0xf)
+		{
+			length &= ~0xf;
+			length += 0x10;
+		}
+		snprintf(cmdstr, sizeof(cmdstr), "%s\n", command);
+		legacyCMD cmd = {
+			MSG_SEND_COMMAND,
+			0x1234,			  // magic
+			(uint32_t)length, // zero terminated?
+			0x0};
+		if ((error = irecv_usb_interrupt_transfer(client, 0x04, (unsigned char *)&cmd, sizeof(cmd), &bytes, USB_TIMEOUT)))
+			return error;
+		if ((error = irecv_usb_interrupt_transfer(client, 0x83, (unsigned char *)&cmd, sizeof(cmd), &bytes, USB_TIMEOUT)))
+			return error;
+		if (cmd.cmdcode != MSG_ACK)
+			return IRECV_E_UNKNOWN_ERROR;
+		if ((error = irecv_usb_interrupt_transfer(client, 0x02, (unsigned char *)cmdstr, length, &bytes, USB_TIMEOUT)))
+			return error;
+		sleep(1); // go easy on this old device
+		return IRECV_E_SUCCESS;
 	}
 
 	if (length > 0)
@@ -4260,6 +4447,36 @@ irecv_error_t irecv_send_buffer(irecv_client_t client, unsigned char *buffer, un
 
 	irecv_error_t error = 0;
 	int recovery_mode = ((client->mode != IRECV_K_DFU_MODE) && (client->mode != IRECV_K_PORT_DFU_MODE) && (client->mode != IRECV_K_WTF_MODE));
+	int legacy_recovery_mode = 0;
+	int isiOS2 = 0;
+
+	if (recovery_mode && client->device_info.cpid == 0x8900 && !client->device_info.ecid)
+	{
+#ifdef DEBUG
+		uint8_t buf[0x100] = {0x00, 0x00, 0x34, 0x12}; // ask how large commands should be
+		int bytes = 0;
+		if ((error = irecv_usb_interrupt_transfer(client, 0x04, &buf[0], 4, &bytes, USB_TIMEOUT)))
+			return error;
+		if ((error = irecv_usb_interrupt_transfer(client, 0x83, &buf[0], sizeof(buf), &bytes, USB_TIMEOUT)))
+			return error;
+		if (bytes != sizeof(legacyCMD))
+			return IRECV_E_UNKNOWN_ERROR;
+#endif
+		legacy_recovery_mode = 1;
+	}
+
+	if (recovery_mode && !legacy_recovery_mode)
+	{
+		// we are in recovery mode and we are not dealing with iOS 1.x
+		if ((client->device_info.cpid == 0x8900 || client->device_info.cpid == 0x8720) && !client->device_info.have_ibfl)
+		{
+			// iOS 2.x doesn't have IBFL tag, but iOS 3 does
+			// Also, to avoid false activation of this codepath, restrict it to the only two CPID which can run iOS 2
+			recovery_mode = 0; // iOS 2 recovery mode works same as DFU mode
+			isiOS2 = 1;
+			options |= IRECV_SEND_OPT_DFU_NOTIFY_FINISH;
+		}
+	}
 
 	if (check_context(client) != IRECV_E_SUCCESS)
 		return IRECV_E_NO_DEVICE;
@@ -4268,6 +4485,8 @@ irecv_error_t irecv_send_buffer(irecv_client_t client, unsigned char *buffer, un
 	unsigned char dfu_xbuf[12] = {0xff, 0xff, 0xff, 0xff, 0xac, 0x05, 0x00, 0x01, 0x55, 0x46, 0x44, 0x10};
 	int dfu_crc = 1;
 	int packet_size = recovery_mode ? 0x8000 : 0x800;
+	if (legacy_recovery_mode)
+		packet_size = 0x200;
 	if (!recovery_mode && (options & IRECV_SEND_OPT_DFU_SMALL_PKT))
 	{
 		packet_size = 0x40;
@@ -4286,7 +4505,29 @@ irecv_error_t irecv_send_buffer(irecv_client_t client, unsigned char *buffer, un
 	}
 
 	/* initiate transfer */
-	if (recovery_mode)
+	if (legacy_recovery_mode)
+	{
+		int bytes = 0;
+		uint32_t loadaddr0x8900 = 0x09000000;
+		const char *ios1_overwrite_loadaddr = getenv("LIBIRECOVERY_IOS1_OVERWRITE_LOADADDR");
+		if (ios1_overwrite_loadaddr)
+		{
+			sscanf(ios1_overwrite_loadaddr, "0x%x", &loadaddr0x8900);
+			debug("Overwriting loadaddr requested by env var. uploading to 0x%08x\n", loadaddr0x8900);
+		}
+		legacyCMD cmd = {
+			MSG_SEND_FILE,
+			0x1234, // magic
+			(uint32_t)length,
+			loadaddr0x8900};
+		if ((error = irecv_usb_interrupt_transfer(client, 0x04, (unsigned char *)&cmd, sizeof(cmd), &bytes, USB_TIMEOUT)))
+			return error;
+		if ((error = irecv_usb_interrupt_transfer(client, 0x83, (unsigned char *)&cmd, sizeof(cmd), &bytes, USB_TIMEOUT)))
+			return error;
+		if (cmd.cmdcode != MSG_ACK)
+			return IRECV_E_UNKNOWN_ERROR;
+	}
+	else if (recovery_mode)
 	{
 		error = irecv_usb_control_transfer(client, 0x41, 0, 0, 0, NULL, 0, USB_TIMEOUT);
 	}
@@ -4305,6 +4546,15 @@ irecv_error_t irecv_send_buffer(irecv_client_t client, unsigned char *buffer, un
 		{
 		case 2:
 			/* DFU IDLE */
+			break;
+		case 8:
+			/* DFU WAIT RESET */
+			if (!isiOS2)
+			{
+				debug("Unexpected state %d in non-iOS2 mode!, issuing ABORT\n", state);
+				irecv_usb_control_transfer(client, 0x21, 6, 0, 0, NULL, 0, USB_TIMEOUT);
+				error = IRECV_E_USB_UPLOAD;
+			}
 			break;
 		case 10:
 			debug("DFU ERROR, issuing CLRSTATUS\n");
@@ -4332,13 +4582,19 @@ irecv_error_t irecv_send_buffer(irecv_client_t client, unsigned char *buffer, un
 	{
 		int size = (i + 1) < packets ? packet_size : last;
 
-		/* Use bulk transfer for recovery mode and control transfer for DFU and WTF mode */
-		if (recovery_mode)
+		if (legacy_recovery_mode)
 		{
+			// Use interrupt transfer for legacy devices
+			error = irecv_usb_interrupt_transfer(client, 0x05, &buffer[i * packet_size], size, &bytes, USB_TIMEOUT);
+		}
+		else if (recovery_mode)
+		{
+			// Use bulk transfer for recovery mode
 			error = irecv_usb_bulk_transfer(client, 0x04, &buffer[i * packet_size], size, &bytes, USB_TIMEOUT);
 		}
 		else
 		{
+			// Use control transfer for DFU and WTF mode
 			if (dfu_crc)
 			{
 				int j;
@@ -4468,6 +4724,19 @@ irecv_error_t irecv_send_buffer(irecv_client_t client, unsigned char *buffer, un
 		}
 
 		irecv_reset(client);
+
+		if (isiOS2)
+		{
+			irecv_reconnect(client, 0);
+		}
+	}
+
+	if (legacy_recovery_mode)
+	{
+		irecv_reconnect(client, 0);
+		char cmdstr[0x100] = {};
+		snprintf(cmdstr, sizeof(cmdstr), "setenv filesize %d", (int)length);
+		irecv_send_command(client, cmdstr);
 	}
 
 	return IRECV_E_SUCCESS;
@@ -4531,6 +4800,12 @@ irecv_error_t irecv_getenv(irecv_client_t client, const char *variable, char **v
 	if (variable == NULL)
 	{
 		return IRECV_E_INVALID_INPUT;
+	}
+
+	if (client->device_info.cpid == 0x8900 && !client->device_info.ecid)
+	{
+		debug("iOS 1 doesn't support getenv\n");
+		return IRECV_E_UNSUPPORTED;
 	}
 
 	memset(command, '\0', sizeof(command));
@@ -5070,7 +5345,7 @@ irecv_client_t irecv_reconnect(irecv_client_t client, int initial_pause)
 
 	if (check_context(client) == IRECV_E_SUCCESS)
 	{
-		irecv_close(client);
+		irecv_cleanup(client);
 	}
 
 	if (initial_pause > 0)
@@ -5091,6 +5366,11 @@ irecv_client_t irecv_reconnect(irecv_client_t client, int initial_pause)
 	new_client->precommand_callback = precommand_callback;
 	new_client->postcommand_callback = postcommand_callback;
 	new_client->disconnected_callback = disconnected_callback;
+
+	// keep old handle valid
+	memcpy(client, new_client, sizeof(*client));
+	free(new_client);
+	new_client = client;
 
 	if (new_client->connected_callback != NULL)
 	{

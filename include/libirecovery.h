@@ -113,6 +113,13 @@ extern "C"
 		unsigned char *sep_nonce;
 		unsigned int sep_nonce_size;
 		uint16_t pid;
+		unsigned int have_cpid : 1;
+		unsigned int have_cprv : 1;
+		unsigned int have_cpfm : 1;
+		unsigned int have_scep : 1;
+		unsigned int have_bdid : 1;
+		unsigned int have_ecid : 1;
+		unsigned int have_ibfl : 1;
 	};
 
 	typedef enum
@@ -166,6 +173,7 @@ extern "C"
 	IRECV_API irecv_error_t irecv_usb_set_interface(irecv_client_t client, int usb_interface, int usb_alt_interface);
 	IRECV_API int irecv_usb_control_transfer(irecv_client_t client, uint8_t bm_request_type, uint8_t b_request, uint16_t w_value, uint16_t w_index, unsigned char *data, uint16_t w_length, unsigned int timeout);
 	IRECV_API int irecv_usb_bulk_transfer(irecv_client_t client, unsigned char endpoint, unsigned char *data, int length, int *transferred, unsigned int timeout);
+	IRECV_API int irecv_usb_interrupt_transfer(irecv_client_t client, unsigned char endpoint, unsigned char *data, int length, int *transferred, unsigned int timeout);
 
 	/* events */
 	typedef void (*irecv_device_event_cb_t)(const irecv_device_event_t *event, void *user_data);
