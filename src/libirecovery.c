@@ -225,6 +225,10 @@ static struct irecv_device irecv_devices[] = {
 	{"iPhone17,3", "d47ap", 0x08, 0x8140, "iPhone 16"},
 	{"iPhone17,4", "d48ap", 0x0A, 0x8140, "iPhone 16 Plus"},
 	{"iPhone17,5", "v59ap", 0x04, 0x8140, "iPhone 16e"},
+	{"iPhone18,1", "v53ap", 0x0C, 0x8150, "iPhone 17 Pro"},
+	{"iPhone18,2", "v54ap", 0x0E, 0x8150, "iPhone 17 Pro Max"},
+	{"iPhone18,3", "v57ap", 0x08, 0x8150, "iPhone 17"},
+	{"iPhone18,4", "d23ap", 0x0A, 0x8150, "iPhone Air"},
 	/* iPod */
 	{"iPod1,1", "n45ap", 0x02, 0x8900, "iPod Touch (1st gen)"},
 	{"iPod2,1", "n72ap", 0x00, 0x8720, "iPod Touch (2nd gen)"},
@@ -395,6 +399,15 @@ static struct irecv_device irecv_devices[] = {
 	{"Watch7,9", "n217bap", 0x12, 0x8310, "Apple Watch Series 10 (46mm)"},
 	{"Watch7,10", "n218sap", 0x14, 0x8310, "Apple Watch Series 10 (42mm Cellular)"},
 	{"Watch7,11", "n218bap", 0x16, 0x8310, "Apple Watch Series 10 (46mm Cellular)"},
+	{"Watch7,12", "n230ap", 0x22, 0x8310, "Apple Watch Ultra 3"},
+	{"Watch7,13", "n243sap", 0x28, 0x8310, "Apple Watch SE 3 (40mm)"},
+	{"Watch7,14", "n243bap", 0x2A, 0x8310, "Apple Watch SE 3 (44mm)"},
+	{"Watch7,15", "n244sap", 0x2C, 0x8310, "Apple Watch SE 3 (40mm Cellular)"},
+	{"Watch7,16", "n244bap", 0x2E, 0x8310, "Apple Watch SE 3 (44mm Cellular)"},
+	{"Watch7,17", "n227sap", 0x18, 0x8310, "Apple Watch Series 11 (42mm)"},
+	{"Watch7,18", "n227bap", 0x1A, 0x8310, "Apple Watch Series 11 (46mm)"},
+	{"Watch7,19", "n228sap", 0x1C, 0x8310, "Apple Watch Series 11 (42mm Cellular)"},
+	{"Watch7,20", "n228bap", 0x1E, 0x8310, "Apple Watch Series 11 (46mm Cellular)"},
 	/* Apple Silicon Macs */
 	{"ADP3,2", "j273aap", 0x42, 0x8027, "Developer Transition Kit (2020)"},
 	{"Macmini9,1", "j274ap", 0x22, 0x8103, "Mac mini (M1, 2020)"},
@@ -4190,7 +4203,7 @@ static irecv_error_t irecv_send_command_raw(irecv_client_t client, const char *c
 		if (bytes != sizeof(legacyCMD))
 			return IRECV_E_UNKNOWN_ERROR;
 #endif
-		char cmdstr[0x100] = {};
+		char cmdstr[0x100] = {0};
 		if (length & 0xf)
 		{
 			length &= ~0xf;
@@ -4734,7 +4747,7 @@ irecv_error_t irecv_send_buffer(irecv_client_t client, unsigned char *buffer, un
 	if (legacy_recovery_mode)
 	{
 		irecv_reconnect(client, 0);
-		char cmdstr[0x100] = {};
+		char cmdstr[0x100] = {0};
 		snprintf(cmdstr, sizeof(cmdstr), "setenv filesize %d", (int)length);
 		irecv_send_command(client, cmdstr);
 	}
