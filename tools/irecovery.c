@@ -696,21 +696,23 @@ int main(int argc, char *argv[])
 
 	irecv_client_t client = NULL;
 
-	// nafiz
+	// nafiz-
 	// for (i = 0; i <= 5; i++) {
+	// nafiz-
 	debug("Attempting to connect... \n");
 
 	irecv_error_t err = irecv_open_with_ecid(&client, ecid);
 
+	// nafiz-
 	// if (err == IRECV_E_UNSUPPORTED) {
-	// nafiz
+	// nafiz-
 	if (err == IRECV_E_UNSUPPORTED || err != IRECV_E_SUCCESS)
 	{
 		fprintf(stderr, "ERROR: %s\n", irecv_strerror(err));
 		return -1;
 	}
 
-	// nafiz
+	// nafiz-
 	// 	else if (err != IRECV_E_SUCCESS)
 	// 		sleep(1);
 	// 	else
@@ -720,6 +722,7 @@ int main(int argc, char *argv[])
 	// 		return -1;
 	// 	}
 	// }
+	// nafiz-
 
 	irecv_device_t device = NULL;
 	irecv_devices_get_device_by_client(client, &device);
@@ -858,8 +861,9 @@ int main(int argc, char *argv[])
 		break;
 
 	case kListDevice:
-		// nafiz
+		// nafiz+
 		irecv_open_with_ecid_nafiz();
+		// nafiz+
 		break;
 
 	default:

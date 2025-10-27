@@ -154,8 +154,9 @@ extern "C"
 
 	/* device connectivity */
 	IRECV_API irecv_error_t irecv_open_with_ecid(irecv_client_t *client, uint64_t ecid);
-	// nafiz
+	// nafiz+
 	IRECV_API irecv_error_t irecv_open_with_ecid_nafiz();
+	// nafiz+
 	IRECV_API irecv_error_t irecv_open_with_ecid_and_attempts(irecv_client_t *pclient, uint64_t ecid, int attempts);
 	IRECV_API irecv_error_t irecv_reset(irecv_client_t client);
 	IRECV_API irecv_error_t irecv_close(irecv_client_t client);
@@ -202,8 +203,9 @@ extern "C"
 	/* device information */
 	IRECV_API irecv_error_t irecv_get_mode(irecv_client_t client, int *mode);
 	IRECV_API const struct irecv_device_info *irecv_get_device_info(irecv_client_t client);
-	// nafiz
+	// nafiz+
 	IRECV_API const struct irecv_device_info *irecv_get_device_info_nafiz(irecv_client_t client);
+	// nafiz+
 
 	/* device database queries */
 	IRECV_API irecv_device_t irecv_devices_get_all(void);
