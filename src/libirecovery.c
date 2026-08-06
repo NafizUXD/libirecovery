@@ -102,14 +102,15 @@
 #endif
 
 #ifndef WIN32
-struct irecv_async_transfer
-{
-	uint32_t len;
-#ifdef HAVE_IOKIT
-	kern_return_t ret;
-#else
-	enum libusb_transfer_status ret;
-#endif
+struct irecv_async_transfer {
+ 	uint32_t len;
+ #ifdef HAVE_IOKIT
+ 	kern_return_t ret;
+ #else
+ #ifndef USE_DUMMY
+ 	enum libusb_transfer_status ret;
+ #endif
+ #endif
 };
 
 #endif
@@ -432,55 +433,62 @@ static struct irecv_device irecv_devices[] = {
 	{"Watch7,19", "n228sap", 0x1C, 0x8310, "Apple Watch Series 11 (42mm Cellular)"},
 	{"Watch7,20", "n228bap", 0x1E, 0x8310, "Apple Watch Series 11 (46mm Cellular)"},
 	/* Apple Silicon Macs */
-	{"ADP3,2", "j273aap", 0x42, 0x8027, "Developer Transition Kit (2020)"},
-	{"Macmini9,1", "j274ap", 0x22, 0x8103, "Mac mini (M1, 2020)"},
-	{"MacBookPro17,1", "j293ap", 0x24, 0x8103, "MacBook Pro (M1, 13-inch, 2020)"},
-	{"MacBookPro18,1", "j316sap", 0x0A, 0x6000, "MacBook Pro (M1 Pro, 16-inch, 2021)"},
-	{"MacBookPro18,2", "j316cap", 0x0A, 0x6001, "MacBook Pro (M1 Max, 16-inch, 2021)"},
-	{"MacBookPro18,3", "j314sap", 0x08, 0x6000, "MacBook Pro (M1 Pro, 14-inch, 2021)"},
-	{"MacBookPro18,4", "j314cap", 0x08, 0x6001, "MacBook Pro (M1 Max, 14-inch, 2021)"},
-	{"MacBookAir10,1", "j313ap", 0x26, 0x8103, "MacBook Air (M1, 2020)"},
-	{"iMac21,1", "j456ap", 0x28, 0x8103, "iMac 24-inch (M1, Two Ports, 2021)"},
-	{"iMac21,2", "j457ap", 0x2A, 0x8103, "iMac 24-inch (M1, Four Ports, 2021)"},
-	{"Mac13,1", "j375cap", 0x04, 0x6001, "Mac Studio (M1 Max, 2022)"},
-	{"Mac13,2", "j375dap", 0x0C, 0x6002, "Mac Studio (M1 Ultra, 2022)"},
-	{"Mac14,2", "j413ap", 0x28, 0x8112, "MacBook Air (M2, 2022)"},
-	{"Mac14,7", "j493ap", 0x2A, 0x8112, "MacBook Pro (M2, 13-inch, 2022)"},
-	{"Mac14,3", "j473ap", 0x24, 0x8112, "Mac mini (M2, 2023)"},
-	{"Mac14,5", "j414cap", 0x04, 0x6021, "MacBook Pro (14-inch, M2 Max, 2023)"},
-	{"Mac14,6", "j416cap", 0x06, 0x6021, "MacBook Pro (16-inch, M2 Max, 2023)"},
-	{"Mac14,8", "j180dap", 0x08, 0x6022, "Mac Pro (2023)"},
-	{"Mac14,9", "j414sap", 0x04, 0x6020, "MacBook Pro (14-inch, M2 Pro, 2023)"},
-	{"Mac14,10", "j416sap", 0x06, 0x6020, "MacBook Pro (16-inch, M2 Pro, 2023)"},
-	{"Mac14,12", "j474sap", 0x02, 0x6020, "Mac mini (M2 Pro, 2023)"},
-	{"Mac14,13", "j475cap", 0x0A, 0x6021, "Mac Studio (M2 Max, 2023)"},
-	{"Mac14,14", "j475dap", 0x0A, 0x6022, "Mac Studio (M2 Ultra, 2023)"},
-	{"Mac14,15", "j415ap", 0x2E, 0x8112, "MacBook Air (M2, 15-inch, 2023)"},
-	{"Mac15,3", "j504ap", 0x22, 0x8122, "MacBook Pro (14-inch, M3, Nov 2023)"},
-	{"Mac15,4", "j433ap", 0x28, 0x8122, "iMac 24-inch (M3, Two Ports, 2023)"},
-	{"Mac15,5", "j434ap", 0x2A, 0x8122, "iMac 24-inch (M3, Four Ports, 2023)"},
-	{"Mac15,6", "j514sap", 0x04, 0x6030, "MacBook Pro (14-inch, M3 Pro, Nov 2023)"},
-	{"Mac15,7", "j516sap", 0x06, 0x6030, "MacBook Pro (16-inch, M3 Pro, Nov 2023)"},
-	{"Mac15,8", "j514cap", 0x44, 0x6031, "MacBook Pro (14-inch, M3 Max, Nov 2023)"},
-	{"Mac15,9", "j516cap", 0x46, 0x6031, "MacBook Pro (16-inch, M3 Max, Nov 2023)"},
-	{"Mac15,10", "j514map", 0x44, 0x6034, "MacBook Pro (14-inch, M3 Max, Nov 2023)"},
-	{"Mac15,11", "j516map", 0x46, 0x6034, "MacBook Pro (16-inch, M3 Max, Nov 2023)"},
-	{"Mac15,12", "j613ap", 0x30, 0x8122, "MacBook Air (13-inch, M3, 2024)"},
-	{"Mac15,13", "j615ap", 0x32, 0x8122, "MacBook Air (15-inch, M3, 2024)"},
-	{"Mac15,14", "j575dap", 0x44, 0x6032, "Mac Studio (M3 Ultra, 2025)"},
-	{"Mac16,1", "j604ap", 0x22, 0x8132, "MacBook Pro (14-inch, M4, Nov 2024)"},
-	{"Mac16,2", "j623ap", 0x24, 0x8132, "iMac 24-inch (M4, Two Ports, 2024)"},
-	{"Mac16,3", "j624ap", 0x26, 0x8132, "iMac 24-inch (M4, Four Ports, 2024)"},
-	{"Mac16,5", "j616cap", 0x06, 0x6041, "MacBook Pro (16-inch, M4 Max, Nov 2024)"},
-	{"Mac16,6", "j614cap", 0x04, 0x6041, "MacBook Pro (14-inch, M4 Max, Nov 2024)"},
-	{"Mac16,7", "j616sap", 0x06, 0x6040, "MacBook Pro (16-inch, M4 Pro, Nov 2024)"},
-	{"Mac16,8", "j614sap", 0x04, 0x6040, "MacBook Pro (14-inch, M4 Pro, Nov 2024)"},
-	{"Mac16,9", "j575cap", 0x02, 0x6041, "Mac Studio (M4 Max, 2025)"},
-	{"Mac16,10", "j773gap", 0x2A, 0x8132, "Mac mini (M4, 2024)"},
-	{"Mac16,11", "j773sap", 0x02, 0x6040, "Mac mini (M4 Pro, 2024)"},
-	{"Mac16,12", "j713ap", 0x2C, 0x8132, "MacBook Air (13-inch, M4, 2025)"},
-	{"Mac16,13", "j715ap", 0x2E, 0x8132, "MacBook Air (15-inch, M4, 2025)"},
-	{"Mac17,2", "j704ap", 0x22, 0x8142, "MacBook Pro (14-inch, M5, 2025)"},
+	{ "ADP3,2",         "j273aap", 0x42, 0x8027, "Developer Transition Kit (2020)" },
+	{ "Macmini9,1",	    "j274ap",  0x22, 0x8103, "Mac mini (M1, 2020)" },
+	{ "MacBookPro17,1", "j293ap",  0x24, 0x8103, "MacBook Pro (M1, 13-inch, 2020)" },
+	{ "MacBookPro18,1", "j316sap", 0x0A, 0x6000, "MacBook Pro (M1 Pro, 16-inch, 2021)" },
+	{ "MacBookPro18,2", "j316cap", 0x0A, 0x6001, "MacBook Pro (M1 Max, 16-inch, 2021)" },
+	{ "MacBookPro18,3", "j314sap", 0x08, 0x6000, "MacBook Pro (M1 Pro, 14-inch, 2021)" },
+	{ "MacBookPro18,4", "j314cap", 0x08, 0x6001, "MacBook Pro (M1 Max, 14-inch, 2021)" },
+	{ "MacBookAir10,1", "j313ap",  0x26, 0x8103, "MacBook Air (M1, 2020)" },
+	{ "iMac21,1",       "j456ap",  0x28, 0x8103, "iMac 24-inch (M1, Two Ports, 2021)" },
+	{ "iMac21,2",       "j457ap",  0x2A, 0x8103, "iMac 24-inch (M1, Four Ports, 2021)" },
+	{ "Mac13,1",        "j375cap", 0x04, 0x6001, "Mac Studio (M1 Max, 2022)" },
+	{ "Mac13,2",        "j375dap", 0x0C, 0x6002, "Mac Studio (M1 Ultra, 2022)" },
+	{ "Mac14,2",        "j413ap",  0x28, 0x8112, "MacBook Air (M2, 2022)" },
+	{ "Mac14,7",        "j493ap",  0x2A, 0x8112, "MacBook Pro (M2, 13-inch, 2022)" },
+	{ "Mac14,3",        "j473ap",  0x24, 0x8112, "Mac mini (M2, 2023)" },
+	{ "Mac14,5",        "j414cap", 0x04, 0x6021, "MacBook Pro (14-inch, M2 Max, 2023)" },
+	{ "Mac14,6",        "j416cap", 0x06, 0x6021, "MacBook Pro (16-inch, M2 Max, 2023)" },
+	{ "Mac14,8",        "j180dap", 0x08, 0x6022, "Mac Pro (2023)" },
+	{ "Mac14,9",        "j414sap", 0x04, 0x6020, "MacBook Pro (14-inch, M2 Pro, 2023)" },
+	{ "Mac14,10",       "j416sap", 0x06, 0x6020, "MacBook Pro (16-inch, M2 Pro, 2023)" },
+	{ "Mac14,12",       "j474sap", 0x02, 0x6020, "Mac mini (M2 Pro, 2023)" },
+	{ "Mac14,13",       "j475cap", 0x0A, 0x6021, "Mac Studio (M2 Max, 2023)" },
+	{ "Mac14,14",       "j475dap", 0x0A, 0x6022, "Mac Studio (M2 Ultra, 2023)" },
+	{ "Mac14,15",       "j415ap",  0x2E, 0x8112, "MacBook Air (M2, 15-inch, 2023)" },
+	{ "Mac15,3",        "j504ap",  0x22, 0x8122, "MacBook Pro (14-inch, M3, Nov 2023)" },
+	{ "Mac15,4",        "j433ap",  0x28, 0x8122, "iMac 24-inch (M3, Two Ports, 2023)" },
+	{ "Mac15,5",        "j434ap",  0x2A, 0x8122, "iMac 24-inch (M3, Four Ports, 2023)" },
+	{ "Mac15,6",        "j514sap", 0x04, 0x6030, "MacBook Pro (14-inch, M3 Pro, Nov 2023)" },
+	{ "Mac15,7",        "j516sap", 0x06, 0x6030, "MacBook Pro (16-inch, M3 Pro, Nov 2023)" },
+	{ "Mac15,8",        "j514cap", 0x44, 0x6031, "MacBook Pro (14-inch, M3 Max, Nov 2023)" },
+	{ "Mac15,9",        "j516cap", 0x46, 0x6031, "MacBook Pro (16-inch, M3 Max, Nov 2023)" },
+	{ "Mac15,10",       "j514map", 0x44, 0x6034, "MacBook Pro (14-inch, M3 Max, Nov 2023)" },
+	{ "Mac15,11",       "j516map", 0x46, 0x6034, "MacBook Pro (16-inch, M3 Max, Nov 2023)" },
+	{ "Mac15,12",       "j613ap",  0x30, 0x8122, "MacBook Air (13-inch, M3, 2024)" },
+	{ "Mac15,13",       "j615ap",  0x32, 0x8122, "MacBook Air (15-inch, M3, 2024)" },
+	{ "Mac15,14",       "j575dap", 0x44, 0x6032, "Mac Studio (M3 Ultra, 2025)" },
+	{ "Mac16,1",        "j604ap",  0x22, 0x8132, "MacBook Pro (14-inch, M4, Nov 2024)" },
+	{ "Mac16,2",        "j623ap",  0x24, 0x8132, "iMac 24-inch (M4, Two Ports, 2024)" },
+	{ "Mac16,3",        "j624ap",  0x26, 0x8132, "iMac 24-inch (M4, Four Ports, 2024)" },
+	{ "Mac16,5",        "j616cap", 0x06, 0x6041, "MacBook Pro (16-inch, M4 Max, Nov 2024)" },
+	{ "Mac16,6",        "j614cap", 0x04, 0x6041, "MacBook Pro (14-inch, M4 Max, Nov 2024)" },
+	{ "Mac16,7",        "j616sap", 0x06, 0x6040, "MacBook Pro (16-inch, M4 Pro, Nov 2024)" },
+	{ "Mac16,8",        "j614sap", 0x04, 0x6040, "MacBook Pro (14-inch, M4 Pro, Nov 2024)" },
+	{ "Mac16,9",        "j575cap", 0x02, 0x6041, "Mac Studio (M4 Max, 2025)" },
+	{ "Mac16,10",       "j773gap", 0x2A, 0x8132, "Mac mini (M4, 2024)" },
+	{ "Mac16,11",       "j773sap", 0x02, 0x6040, "Mac mini (M4 Pro, 2024)" },
+	{ "Mac16,12",       "j713ap",  0x2C, 0x8132, "MacBook Air (13-inch, M4, 2025)" },
+	{ "Mac16,13",       "j715ap",  0x2E, 0x8132, "MacBook Air (15-inch, M4, 2025)" },
+	{ "Mac17,2",        "j704ap",  0x22, 0x8142, "MacBook Pro (14-inch, M5, 2025)" },
+	{ "Mac17,3",        "j813ap",  0x24, 0x8142, "MacBook Air (13-inch, M5, 2026)" },
+	{ "Mac17,4",        "j815ap",  0x26, 0x8142, "MacBook Air (15-inch, M5, 2026)" },
+	{ "Mac17,5",        "j700ap",  0x64, 0x8140, "MacBook Neo" },
+	{ "Mac17,6",        "j716cap", 0x0E, 0x6050, "MacBook Pro (16-inch, M5 Max, 2026)" },
+	{ "Mac17,7",        "j714cap", 0x0A, 0x6050, "MacBook Pro (14-inch, M5 Max, 2026)" },
+	{ "Mac17,8",        "j716sap", 0x0C, 0x6050, "MacBook Pro (16-inch, M5 Pro, 2026)" },
+	{ "Mac17,9",        "j714sap", 0x08, 0x6050, "MacBook Pro (14-inch, M5 Pro, 2026)" },
 	/* Apple Silicon VMs (supported by Virtualization.framework on macOS 12) */
 	{"VirtualMac2,1", "vma2macosap", 0x20, 0xFE00, "Apple Virtual Machine 1"},
 	/* Apple T2 Coprocessor */
@@ -2005,6 +2013,7 @@ static int iokit_async_usb_control_transfer(irecv_client_t client, uint8_t bm_re
 }
 
 #else
+#ifndef USE_DUMMY
 
 static void async_cb(struct libusb_transfer *usb_transfer)
 {
@@ -2013,6 +2022,7 @@ static void async_cb(struct libusb_transfer *usb_transfer)
 	transfer->len += usb_transfer->actual_length;
 }
 
+#endif
 #endif
 #endif
 
