@@ -1685,7 +1685,7 @@ static irecv_error_t win32_open_with_ecid(irecv_client_t *client, uint64_t ecid)
 	return IRECV_E_SUCCESS;
 }
 
-// nafiz⬇+
+// nafiz+
 static irecv_error_t win32_open_with_ecid_nafiz(irecv_client_t *client, uint64_t ecid)
 {
 	int found = 0;
@@ -1837,7 +1837,7 @@ static irecv_error_t win32_open_with_ecid_nafiz(irecv_client_t *client, uint64_t
 
 	return IRECV_E_SUCCESS;
 }
-// nafiz⬆+
+// nafiz+
 
 #endif
 
@@ -2557,7 +2557,7 @@ static irecv_error_t iokit_open_with_ecid(irecv_client_t *pclient, uint64_t ecid
 	return iokit_usb_open_service(pclient, ret_service);
 }
 
-// nafiz⬇+
+// nafiz+
 static irecv_error_t iokit_open_with_ecid_nafiz(irecv_client_t *pclient, uint64_t ecid)
 {
 	io_service_t service, ret_service;
@@ -2663,7 +2663,7 @@ static irecv_error_t iokit_open_with_ecid_nafiz(irecv_client_t *pclient, uint64_
 
 	return iokit_usb_open_service(pclient, ret_service);
 }
-// nafiz⬆+
+// nafiz+
 
 #endif
 
@@ -2806,7 +2806,7 @@ static irecv_error_t libusb_open_with_ecid(irecv_client_t *pclient, uint64_t eci
 	return ret;
 }
 
-// nafiz⬇+
+// nafiz+
 static irecv_error_t libusb_open_with_ecid_nafiz()
 {
 	int i = 0;
@@ -2874,7 +2874,7 @@ static irecv_error_t libusb_open_with_ecid_nafiz()
 	}
 	libusb_free_device_list(usb_device_list, 1);
 }
-// nafiz⬆+
+// nafiz+
 
 #endif
 #endif
@@ -2991,7 +2991,7 @@ irecv_error_t irecv_open_with_ecid(irecv_client_t *pclient, uint64_t ecid)
 #endif
 }
 
-// nafiz⬇+
+// nafiz+
 irecv_error_t irecv_open_with_ecid_nafiz()
 {
 	uint64_t ecid;
@@ -3016,7 +3016,7 @@ irecv_error_t irecv_open_with_ecid_nafiz()
 #endif
 #endif
 }
-// nafiz⬆+
+// nafiz+
 
 irecv_error_t irecv_usb_set_configuration(irecv_client_t client, int configuration)
 {
@@ -5129,7 +5129,7 @@ const struct irecv_device_info *irecv_get_device_info(irecv_client_t client)
 #endif
 }
 
-// nafiz⬇+
+// nafiz+
 const struct irecv_device_info *irecv_get_device_info_nafiz(irecv_client_t client)
 {
 #ifdef USE_DUMMY
@@ -5141,7 +5141,7 @@ const struct irecv_device_info *irecv_get_device_info_nafiz(irecv_client_t clien
 	return &client->device_info;
 #endif
 }
-// nafiz⬆+
+// nafiz+
 
 #ifndef USE_DUMMY
 #ifdef HAVE_IOKIT
