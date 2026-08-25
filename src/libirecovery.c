@@ -5063,7 +5063,8 @@ irecv_error_t irecv_getenv(irecv_client_t client, const char *variable, char **v
 		return error;
 	}
 
-	char *response = (char *)malloc(256);
+	int rsize = 256;
+	char* response = (char*) malloc(rsize);
 	if (response == NULL)
 	{
 		return IRECV_E_OUT_OF_MEMORY;
@@ -5088,7 +5089,8 @@ irecv_error_t irecv_getret(irecv_client_t client, unsigned int *value)
 
 	*value = 0;
 
-	char *response = (char *)malloc(256);
+	int rsize = 256;
+	char* response = (char*) malloc(rsize);
 	if (response == NULL)
 	{
 		return IRECV_E_OUT_OF_MEMORY;
