@@ -492,22 +492,25 @@ static struct irecv_device irecv_devices[] = {
 	/* Apple Silicon VMs (supported by Virtualization.framework on macOS 12) */
 	{"VirtualMac2,1", "vma2macosap", 0x20, 0xFE00, "Apple Virtual Machine 1"},
 	/* Apple T2 Coprocessor */
-	{"iBridge2,1", "j137ap", 0x0A, 0x8012, "Apple T2 iMacPro1,1 (j137)"},
-	{"iBridge2,3", "j680ap", 0x0B, 0x8012, "Apple T2 MacBookPro15,1 (j680)"},
-	{"iBridge2,4", "j132ap", 0x0C, 0x8012, "Apple T2 MacBookPro15,2 (j132)"},
-	{"iBridge2,5", "j174ap", 0x0E, 0x8012, "Apple T2 Macmini8,1 (j174)"},
-	{"iBridge2,6", "j160ap", 0x0F, 0x8012, "Apple T2 MacPro7,1 (j160)"},
-	{"iBridge2,7", "j780ap", 0x07, 0x8012, "Apple T2 MacBookPro15,3 (j780)"},
-	{"iBridge2,8", "j140kap", 0x17, 0x8012, "Apple T2 MacBookAir8,1 (j140k)"},
-	{"iBridge2,10", "j213ap", 0x18, 0x8012, "Apple T2 MacBookPro15,4 (j213)"},
-	{"iBridge2,12", "j140aap", 0x37, 0x8012, "Apple T2 MacBookAir8,2 (j140a)"},
-	{"iBridge2,14", "j152fap", 0x3A, 0x8012, "Apple T2 MacBookPro16,1 (j152f)"},
-	{"iBridge2,15", "j230kap", 0x3F, 0x8012, "Apple T2 MacBookAir9,1 (j230k)"},
-	{"iBridge2,16", "j214kap", 0x3E, 0x8012, "Apple T2 MacBookPro16,2 (j214k)"},
-	{"iBridge2,19", "j185ap", 0x22, 0x8012, "Apple T2 iMac20,1 (j185)"},
-	{"iBridge2,20", "j185fap", 0x23, 0x8012, "Apple T2 iMac20,2 (j185f)"},
-	{"iBridge2,21", "j223ap", 0x3B, 0x8012, "Apple T2 MacBookPro16,3 (j223)"},
-	{"iBridge2,22", "j215ap", 0x38, 0x8012, "Apple T2 MacBookPro16,4 (j215)"},
+	{ "iBridge2,1",	 "j137ap",   0x0A, 0x8012, "Apple T2 iMacPro1,1 (j137)" },
+	{ "iBridge2,3",	 "j680ap",   0x0B, 0x8012, "Apple T2 MacBookPro15,1 (j680)" },
+	{ "iBridge2,4",	 "j132ap",   0x0C, 0x8012, "Apple T2 MacBookPro15,2 (j132)" },
+	{ "iBridge2,5",	 "j174ap",   0x0E, 0x8012, "Apple T2 Macmini8,1 (j174)" },
+	{ "iBridge2,6",	 "j160ap",   0x0F, 0x8012, "Apple T2 MacPro7,1 (j160)" },
+	{ "iBridge2,7",	 "j780ap",   0x07, 0x8012, "Apple T2 MacBookPro15,3 (j780)" },
+	{ "iBridge2,8",	 "j140kap",  0x17, 0x8012, "Apple T2 MacBookAir8,1 (j140k)" },
+	{ "iBridge2,10", "j213ap",   0x18, 0x8012, "Apple T2 MacBookPro15,4 (j213)" },
+	{ "iBridge2,12", "j140aap",  0x37, 0x8012, "Apple T2 MacBookAir8,2 (j140a)" },
+	{ "iBridge2,14", "j152fap",  0x3A, 0x8012, "Apple T2 MacBookPro16,1 (j152f)" },
+	{ "iBridge2,15", "j230kap",  0x3F, 0x8012, "Apple T2 MacBookAir9,1 (j230k)" },
+	{ "iBridge2,16", "j214kap",  0x3E, 0x8012, "Apple T2 MacBookPro16,2 (j214k)" },
+	{ "iBridge2,19", "j185ap",   0x22, 0x8012, "Apple T2 iMac20,1 (j185)" },
+	{ "iBridge2,20", "j185fap",  0x23, 0x8012, "Apple T2 iMac20,2 (j185f)" },
+	{ "iBridge2,21", "j223ap",   0x3B, 0x8012, "Apple T2 MacBookPro16,3 (j223)" },
+	{ "iBridge2,22", "j215ap",   0x38, 0x8012, "Apple T2 MacBookPro16,4 (j215)" },
+	/* Lightning Video Adapters */
+	{ "iAccy1,1", "b137ap", 0x00, 0x8747, "Lightning Digital AV Adapter" },
+	{ "iAccy1,2", "b165ap", 0x02, 0x8747, "Lightning to VGA Adapter" },
 	/* Apple Displays */
 	{"AppleDisplay2,1", "j327ap", 0x22, 0x8030, "Studio Display"},
 	/* Apple Vision Pro */
@@ -1055,7 +1058,7 @@ static void irecv_load_device_info_from_iboot_string(irecv_client_t client, cons
 		return;
 	}
 
-	memset(&client->device_info, '\0', sizeof(struct irecv_device_info));
+	memset(&client->device_info, 0, sizeof(struct irecv_device_info));
 
 	client->device_info.serial_string = strdup(iboot_string);
 
@@ -1529,161 +1532,6 @@ typedef struct usb_control_request
 	char data[];
 } usb_control_request;
 
-// nafiz+
-static irecv_error_t win32_open_with_ecid_nafiz(irecv_client_t *client, uint64_t ecid)
-{
-	int found = 0;
-	const GUID *guids[] = {&GUID_DEVINTERFACE_KIS, &GUID_DEVINTERFACE_PORTDFU, &GUID_DEVINTERFACE_DFU, &GUID_DEVINTERFACE_IBOOT, NULL};
-	irecv_client_t _client = (irecv_client_t)malloc(sizeof(struct irecv_client_private));
-	memset(_client, 0, sizeof(struct irecv_client_private));
-
-	int k;
-	for (k = 0; !found && guids[k]; k++)
-	{
-		DWORD i;
-		SP_DEVICE_INTERFACE_DATA currentInterface;
-		HDEVINFO usbDevices = SetupDiGetClassDevs(guids[k], NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
-		memset(&currentInterface, '\0', sizeof(SP_DEVICE_INTERFACE_DATA));
-		currentInterface.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
-		for (i = 0; usbDevices && SetupDiEnumDeviceInterfaces(usbDevices, NULL, guids[k], i, &currentInterface); i++)
-		{
-			_client->handle = INVALID_HANDLE_VALUE;
-			DWORD requiredSize = 0;
-			PSP_DEVICE_INTERFACE_DETAIL_DATA_A details;
-			SetupDiGetDeviceInterfaceDetailA(usbDevices, &currentInterface, NULL, 0, &requiredSize, NULL);
-			details = (PSP_DEVICE_INTERFACE_DETAIL_DATA_A)malloc(requiredSize);
-			details->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_A);
-			if (!SetupDiGetDeviceInterfaceDetailA(usbDevices, &currentInterface, details, requiredSize, NULL, NULL))
-			{
-				free(details);
-				continue;
-			}
-
-			unsigned int pid = 0;
-			unsigned int vid = 0;
-			if (sscanf(details->DevicePath, "\\\\?\\%*3s#vid_%04x&pid_%04x", &vid, &pid) != 2)
-			{
-				debug("%s: ERROR: failed to parse VID/PID! path: %s\n", __func__, details->DevicePath);
-				free(details);
-				continue;
-			}
-			if (vid != APPLE_VENDOR_ID)
-			{
-				free(details);
-				continue;
-			}
-
-			// make sure the current device is actually in the right mode for the given driver interface
-			if ((guids[k] == &GUID_DEVINTERFACE_DFU && pid != IRECV_K_DFU_MODE && pid != IRECV_K_WTF_MODE) || (guids[k] == &GUID_DEVINTERFACE_PORTDFU && pid != IRECV_K_PORT_DFU_MODE) || (guids[k] == &GUID_DEVINTERFACE_IBOOT && (pid < IRECV_K_RECOVERY_MODE_1 || pid > IRECV_K_RECOVERY_MODE_4)) || (guids[k] == &GUID_DEVINTERFACE_KIS && pid != 1))
-			{
-				free(details);
-				continue;
-			}
-			if (guids[k] == &GUID_DEVINTERFACE_KIS)
-			{
-				pid = KIS_PRODUCT_ID;
-			}
-
-			_client->handle = CreateFileA(details->DevicePath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
-			if (_client->handle == INVALID_HANDLE_VALUE)
-			{
-				debug("%s: Failed to open device path %s: %d\n", __func__, details->DevicePath, (int)GetLastError());
-				free(details);
-				continue;
-			}
-			_client->mode = pid;
-
-			if (ecid == IRECV_K_WTF_MODE)
-			{
-				if (_client->mode != IRECV_K_WTF_MODE)
-				{
-					/* special ecid case, ignore !IRECV_K_WTF_MODE */
-					CloseHandle(_client->handle);
-					free(details);
-					continue;
-				}
-				else
-				{
-					ecid = 0;
-				}
-			}
-
-			if ((ecid != 0) && (_client->mode == IRECV_K_WTF_MODE))
-			{
-				/* we can't get ecid in WTF mode */
-				CloseHandle(_client->handle);
-				free(details);
-				continue;
-			}
-
-			char serial_str[256];
-			serial_str[0] = '\0';
-
-			if (_client->mode != KIS_PRODUCT_ID)
-			{
-				char *p = (char *)details->DevicePath;
-				while ((p = strstr(p, "\\usb")))
-				{
-					if (sscanf(p, "\\usb#vid_05ac&pid_%*04x#%s", serial_str) == 1)
-						break;
-					p += 4;
-				}
-				free(details);
-
-				if (serial_str[0] == '\0')
-				{
-					CloseHandle(_client->handle);
-					continue;
-				}
-				p = strchr(serial_str, '#');
-				if (p)
-				{
-					*p = '\0';
-				}
-
-				unsigned int j;
-				for (j = 0; j < strlen(serial_str); j++)
-				{
-					if (serial_str[j] == '_')
-					{
-						serial_str[j] = ' ';
-					}
-					else
-					{
-						serial_str[j] = toupper(serial_str[j]);
-					}
-				}
-
-				irecv_load_device_info_from_iboot_string(_client, serial_str);
-			}
-
-			if (ecid != 0 && _client->mode != KIS_PRODUCT_ID)
-			{
-				if (_client->device_info.ecid != ecid)
-				{
-					CloseHandle(_client->handle);
-					continue;
-				}
-				debug("found device with ECID %016" PRIx64 "\n", (uint64_t)ecid);
-			}
-			found = 1;
-			break;
-		}
-		SetupDiDestroyDeviceInfoList(usbDevices);
-	}
-
-	if (!found)
-	{
-		irecv_close(_client);
-		return IRECV_E_UNABLE_TO_CONNECT;
-	}
-
-	*client = _client;
-
-	return IRECV_E_SUCCESS;
-}
-// nafiz+
-
 static irecv_error_t win32_open_with_ecid(irecv_client_t *client, uint64_t ecid)
 {
 	int found = 0;
@@ -1697,7 +1545,7 @@ static irecv_error_t win32_open_with_ecid(irecv_client_t *client, uint64_t ecid)
 		DWORD i;
 		SP_DEVICE_INTERFACE_DATA currentInterface;
 		HDEVINFO usbDevices = SetupDiGetClassDevs(guids[k], NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
-		memset(&currentInterface, '\0', sizeof(SP_DEVICE_INTERFACE_DATA));
+		memset(&currentInterface, 0, sizeof(SP_DEVICE_INTERFACE_DATA));
 		currentInterface.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
 		for (i = 0; usbDevices && SetupDiEnumDeviceInterfaces(usbDevices, NULL, guids[k], i, &currentInterface); i++)
 		{
@@ -1836,6 +1684,161 @@ static irecv_error_t win32_open_with_ecid(irecv_client_t *client, uint64_t ecid)
 
 	return IRECV_E_SUCCESS;
 }
+
+// nafiz⬇+
+static irecv_error_t win32_open_with_ecid_nafiz(irecv_client_t *client, uint64_t ecid)
+{
+	int found = 0;
+	const GUID *guids[] = {&GUID_DEVINTERFACE_KIS, &GUID_DEVINTERFACE_PORTDFU, &GUID_DEVINTERFACE_DFU, &GUID_DEVINTERFACE_IBOOT, NULL};
+	irecv_client_t _client = (irecv_client_t)malloc(sizeof(struct irecv_client_private));
+	memset(_client, 0, sizeof(struct irecv_client_private));
+
+	int k;
+	for (k = 0; !found && guids[k]; k++) {
+		DWORD i;
+		SP_DEVICE_INTERFACE_DATA currentInterface;
+		HDEVINFO usbDevices = SetupDiGetClassDevs(guids[k], NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+		memset(&currentInterface, 0, sizeof(SP_DEVICE_INTERFACE_DATA));
+		currentInterface.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
+		for (i = 0; usbDevices && SetupDiEnumDeviceInterfaces(usbDevices, NULL, guids[k], i, &currentInterface); i++)
+		{
+			_client->handle = INVALID_HANDLE_VALUE;
+			DWORD requiredSize = 0;
+			PSP_DEVICE_INTERFACE_DETAIL_DATA_A details;
+			SetupDiGetDeviceInterfaceDetailA(usbDevices, &currentInterface, NULL, 0, &requiredSize, NULL);
+			details = (PSP_DEVICE_INTERFACE_DETAIL_DATA_A)malloc(requiredSize);
+			details->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_A);
+			if (!SetupDiGetDeviceInterfaceDetailA(usbDevices, &currentInterface, details, requiredSize, NULL, NULL))
+			{
+				free(details);
+				continue;
+			}
+
+			unsigned int pid = 0;
+			unsigned int vid = 0;
+			if (sscanf(details->DevicePath, "\\\\?\\%*3s#vid_%04x&pid_%04x", &vid, &pid) != 2)
+			{
+				debug("%s: ERROR: failed to parse VID/PID! path: %s\n", __func__, details->DevicePath);
+				free(details);
+				continue;
+			}
+			if (vid != APPLE_VENDOR_ID)
+			{
+				free(details);
+				continue;
+			}
+
+			// make sure the current device is actually in the right mode for the given driver interface
+			if ((guids[k] == &GUID_DEVINTERFACE_DFU && pid != IRECV_K_DFU_MODE && pid != IRECV_K_WTF_MODE) || (guids[k] == &GUID_DEVINTERFACE_PORTDFU && pid != IRECV_K_PORT_DFU_MODE) || (guids[k] == &GUID_DEVINTERFACE_IBOOT && (pid < IRECV_K_RECOVERY_MODE_1 || pid > IRECV_K_RECOVERY_MODE_4)) || (guids[k] == &GUID_DEVINTERFACE_KIS && pid != 1))
+			{
+				free(details);
+				continue;
+			}
+			if (guids[k] == &GUID_DEVINTERFACE_KIS)
+			{
+				pid = KIS_PRODUCT_ID;
+			}
+
+			_client->handle = CreateFileA(details->DevicePath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
+			if (_client->handle == INVALID_HANDLE_VALUE)
+			{
+				debug("%s: Failed to open device path %s: %d\n", __func__, details->DevicePath, (int)GetLastError());
+				free(details);
+				continue;
+			}
+			_client->mode = pid;
+
+			if (ecid == IRECV_K_WTF_MODE)
+			{
+				if (_client->mode != IRECV_K_WTF_MODE)
+				{
+					/* special ecid case, ignore !IRECV_K_WTF_MODE */
+					CloseHandle(_client->handle);
+					free(details);
+					continue;
+				}
+				else
+				{
+					ecid = 0;
+				}
+			}
+
+			if ((ecid != 0) && (_client->mode == IRECV_K_WTF_MODE))
+			{
+				/* we can't get ecid in WTF mode */
+				CloseHandle(_client->handle);
+				free(details);
+				continue;
+			}
+
+			char serial_str[256];
+			serial_str[0] = '\0';
+
+			if (_client->mode != KIS_PRODUCT_ID)
+			{
+				char *p = (char *)details->DevicePath;
+				while ((p = strstr(p, "\\usb")))
+				{
+					if (sscanf(p, "\\usb#vid_05ac&pid_%*04x#%s", serial_str) == 1)
+						break;
+					p += 4;
+				}
+				free(details);
+
+				if (serial_str[0] == '\0')
+				{
+					CloseHandle(_client->handle);
+					continue;
+				}
+				p = strchr(serial_str, '#');
+				if (p)
+				{
+					*p = '\0';
+				}
+
+				unsigned int j;
+				for (j = 0; j < strlen(serial_str); j++)
+				{
+					if (serial_str[j] == '_')
+					{
+						serial_str[j] = ' ';
+					}
+					else
+					{
+						serial_str[j] = toupper(serial_str[j]);
+					}
+				}
+
+				irecv_load_device_info_from_iboot_string(_client, serial_str);
+			}
+
+			if (ecid != 0 && _client->mode != KIS_PRODUCT_ID)
+			{
+				if (_client->device_info.ecid != ecid)
+				{
+					CloseHandle(_client->handle);
+					continue;
+				}
+				debug("found device with ECID %016" PRIx64 "\n", (uint64_t)ecid);
+			}
+			found = 1;
+			break;
+		}
+		SetupDiDestroyDeviceInfoList(usbDevices);
+	}
+
+	if (!found)
+	{
+		irecv_close(_client);
+		return IRECV_E_UNABLE_TO_CONNECT;
+	}
+
+	*client = _client;
+
+	return IRECV_E_SUCCESS;
+}
+// nafiz⬆+
+
 #endif
 
 #ifdef HAVE_IOKIT
@@ -1870,14 +1873,14 @@ static int iokit_usb_control_transfer(irecv_client_t client, uint8_t bm_request_
 	IOReturn result;
 	IOUSBDevRequestTO req;
 
-	bzero(&req, sizeof(req));
-	req.bmRequestType = bm_request_type;
-	req.bRequest = b_request;
-	req.wValue = OSSwapLittleToHostInt16(w_value);
-	req.wIndex = OSSwapLittleToHostInt16(w_index);
-	req.wLength = OSSwapLittleToHostInt16(w_length);
-	req.pData = data;
-	req.noDataTimeout = timeout;
+	memset(&req, 0, sizeof(req));
+	req.bmRequestType     = bm_request_type;
+	req.bRequest          = b_request;
+	req.wValue            = OSSwapLittleToHostInt16(w_value);
+	req.wIndex            = OSSwapLittleToHostInt16(w_index);
+	req.wLength           = OSSwapLittleToHostInt16(w_length);
+	req.pData             = data;
+	req.noDataTimeout     = timeout;
 	req.completionTimeout = timeout;
 
 	result = (*client->handle)->DeviceRequestTO(client->handle, &req);
@@ -1985,13 +1988,13 @@ static int iokit_async_usb_control_transfer(irecv_client_t client, uint8_t bm_re
 	IOReturn result;
 	IOUSBDevRequest req;
 
-	bzero(&req, sizeof(req));
-	req.bmRequestType = bm_request_type;
-	req.bRequest = b_request;
-	req.wValue = OSSwapLittleToHostInt16(w_value);
-	req.wIndex = OSSwapLittleToHostInt16(w_index);
-	req.wLength = OSSwapLittleToHostInt16(w_length);
-	req.pData = data;
+	memset(&req, 0, sizeof(req));
+	req.bmRequestType     = bm_request_type;
+	req.bRequest          = b_request;
+	req.wValue            = OSSwapLittleToHostInt16(w_value);
+	req.wIndex            = OSSwapLittleToHostInt16(w_index);
+	req.wLength           = OSSwapLittleToHostInt16(w_length);
+	req.pData             = data;
 	result = (*client->handle)->DeviceRequestAsync(client->handle, &req, iokit_async_cb, transfer);
 	switch (result)
 	{
@@ -2075,7 +2078,7 @@ IRECV_API int irecv_async_usb_control_transfer_with_cancel(irecv_client_t client
 #ifndef _WIN32
 	irecv_error_t error;
 	struct irecv_async_transfer transfer;
-	bzero(&transfer, sizeof(struct irecv_async_transfer));
+	memset(&transfer, 0, sizeof(struct irecv_async_transfer));
 
 #ifdef HAVE_IOKIT
 
@@ -2448,114 +2451,6 @@ static io_iterator_t iokit_usb_get_iterator_for_pid(UInt16 pid)
 	return iterator;
 }
 
-// nafiz+
-static irecv_error_t iokit_open_with_ecid_nafiz(irecv_client_t *pclient, uint64_t ecid)
-{
-	io_service_t service, ret_service;
-	io_iterator_t iterator;
-	CFStringRef usbSerial = NULL;
-	CFStringRef ecidString = NULL;
-	CFRange range;
-
-	UInt16 wtf_pids[] = {IRECV_K_WTF_MODE, 0};
-	UInt16 all_pids[] = {IRECV_K_WTF_MODE, IRECV_K_DFU_MODE, IRECV_K_PORT_DFU_MODE, IRECV_K_RECOVERY_MODE_1, IRECV_K_RECOVERY_MODE_2, IRECV_K_RECOVERY_MODE_3, IRECV_K_RECOVERY_MODE_4, KIS_PRODUCT_ID, 0};
-	UInt16 *pids = all_pids;
-	int i;
-
-	if (pclient == NULL)
-	{
-		debug("%s: pclient parameter is null\n", __func__);
-		return IRECV_E_INVALID_INPUT;
-	}
-	if (ecid == IRECV_K_WTF_MODE)
-	{
-		/* special ecid case, ignore !IRECV_K_WTF_MODE */
-		pids = wtf_pids;
-		ecid = 0;
-	}
-	if (ecid > 0)
-	{
-		ecidString = CFStringCreateWithFormat(kCFAllocatorDefault, NULL, CFSTR("%llX"), ecid);
-		if (ecidString == NULL)
-		{
-			debug("%s: failed to create ECID string\n", __func__);
-			return IRECV_E_UNABLE_TO_CONNECT;
-		}
-	}
-
-	*pclient = NULL;
-	ret_service = IO_OBJECT_NULL;
-
-	for (i = 0; (pids[i] > 0 && ret_service == IO_OBJECT_NULL); i++)
-	{
-
-		iterator = iokit_usb_get_iterator_for_pid(pids[i]);
-		if (iterator)
-		{
-			while ((service = IOIteratorNext(iterator)))
-			{
-
-				if (ecid == 0)
-				{
-					ret_service = service;
-					break;
-				}
-
-				if (pids[i] == KIS_PRODUCT_ID)
-				{
-					// In KIS Mode, we have to open the device in order to get
-					// it's ECID
-					irecv_error_t err = iokit_usb_open_service(pclient, service);
-					if (err != IRECV_E_SUCCESS)
-					{
-						debug("%s: failed to open KIS device\n", __func__);
-						continue;
-					}
-
-					if (ecidString)
-						CFRelease(ecidString);
-
-					return IRECV_E_SUCCESS;
-				}
-
-				usbSerial = IORegistryEntryCreateCFProperty(service, CFSTR(kUSBSerialNumberString), kCFAllocatorDefault, 0);
-				if (usbSerial == NULL)
-				{
-					debug("%s: failed to create USB serial string property\n", __func__);
-					IOObjectRelease(service);
-					continue;
-				}
-
-				range = CFStringFind(usbSerial, ecidString, kCFCompareCaseInsensitive);
-				if (range.location == kCFNotFound)
-				{
-					IOObjectRelease(service);
-				}
-				else
-				{
-					ret_service = service;
-					break;
-				}
-			}
-			if (usbSerial)
-			{
-				CFRelease(usbSerial);
-				usbSerial = NULL;
-			}
-			IOObjectRelease(iterator);
-		}
-	}
-
-	if (ecidString)
-		CFRelease(ecidString);
-
-	if (ret_service == IO_OBJECT_NULL)
-		return IRECV_E_UNABLE_TO_CONNECT;
-
-	return iokit_usb_open_service(pclient, ret_service);
-}
-// nafiz+
-
 static irecv_error_t iokit_open_with_ecid(irecv_client_t *pclient, uint64_t ecid)
 {
 	io_service_t service, ret_service;
@@ -2661,6 +2556,115 @@ static irecv_error_t iokit_open_with_ecid(irecv_client_t *pclient, uint64_t ecid
 
 	return iokit_usb_open_service(pclient, ret_service);
 }
+
+// nafiz⬇+
+static irecv_error_t iokit_open_with_ecid_nafiz(irecv_client_t *pclient, uint64_t ecid)
+{
+	io_service_t service, ret_service;
+	io_iterator_t iterator;
+	CFStringRef usbSerial = NULL;
+	CFStringRef ecidString = NULL;
+	CFRange range;
+
+	UInt16 wtf_pids[] = {IRECV_K_WTF_MODE, 0};
+	UInt16 all_pids[] = {IRECV_K_WTF_MODE, IRECV_K_DFU_MODE, IRECV_K_PORT_DFU_MODE, IRECV_K_RECOVERY_MODE_1, IRECV_K_RECOVERY_MODE_2, IRECV_K_RECOVERY_MODE_3, IRECV_K_RECOVERY_MODE_4, KIS_PRODUCT_ID, 0};
+	UInt16 *pids = all_pids;
+	int i;
+
+	if (pclient == NULL)
+	{
+		debug("%s: pclient parameter is null\n", __func__);
+		return IRECV_E_INVALID_INPUT;
+	}
+	if (ecid == IRECV_K_WTF_MODE)
+	{
+		/* special ecid case, ignore !IRECV_K_WTF_MODE */
+		pids = wtf_pids;
+		ecid = 0;
+	}
+	if (ecid > 0)
+	{
+		ecidString = CFStringCreateWithFormat(kCFAllocatorDefault, NULL, CFSTR("%llX"), ecid);
+		if (ecidString == NULL)
+		{
+			debug("%s: failed to create ECID string\n", __func__);
+			return IRECV_E_UNABLE_TO_CONNECT;
+		}
+	}
+
+	*pclient = NULL;
+	ret_service = IO_OBJECT_NULL;
+
+	for (i = 0; (pids[i] > 0 && ret_service == IO_OBJECT_NULL); i++)
+	{
+
+		iterator = iokit_usb_get_iterator_for_pid(pids[i]);
+		if (iterator)
+		{
+			while ((service = IOIteratorNext(iterator)))
+			{
+
+				if (ecid == 0)
+				{
+					ret_service = service;
+					break;
+				}
+
+				if (pids[i] == KIS_PRODUCT_ID)
+				{
+					// In KIS Mode, we have to open the device in order to get
+					// it's ECID
+					irecv_error_t err = iokit_usb_open_service(pclient, service);
+					if (err != IRECV_E_SUCCESS)
+					{
+						debug("%s: failed to open KIS device\n", __func__);
+						continue;
+					}
+
+					if (ecidString)
+						CFRelease(ecidString);
+
+					return IRECV_E_SUCCESS;
+				}
+
+				usbSerial = IORegistryEntryCreateCFProperty(service, CFSTR(kUSBSerialNumberString), kCFAllocatorDefault, 0);
+				if (usbSerial == NULL)
+				{
+					debug("%s: failed to create USB serial string property\n", __func__);
+					IOObjectRelease(service);
+					continue;
+				}
+
+				range = CFStringFind(usbSerial, ecidString, kCFCompareCaseInsensitive);
+				if (range.location == kCFNotFound)
+				{
+					IOObjectRelease(service);
+				}
+				else
+				{
+					ret_service = service;
+					break;
+				}
+			}
+			if (usbSerial)
+			{
+				CFRelease(usbSerial);
+				usbSerial = NULL;
+			}
+			IOObjectRelease(iterator);
+		}
+	}
+
+	if (ecidString)
+		CFRelease(ecidString);
+
+	if (ret_service == IO_OBJECT_NULL)
+		return IRECV_E_UNABLE_TO_CONNECT;
+
+	return iokit_usb_open_service(pclient, ret_service);
+}
+// nafiz⬆+
+
 #endif
 
 #ifndef _WIN32
@@ -2700,7 +2704,7 @@ static irecv_error_t libusb_usb_open_handle_with_descriptor_and_ecid(irecv_clien
 		return IRECV_E_OUT_OF_MEMORY;
 	}
 
-	memset(client, '\0', sizeof(struct irecv_client_private));
+	memset(client, 0, sizeof(struct irecv_client_private));
 	client->usb_interface = 0;
 	client->handle = usb_handle;
 	client->mode = usb_descriptor->idProduct;
@@ -2726,78 +2730,6 @@ static irecv_error_t libusb_usb_open_handle_with_descriptor_and_ecid(irecv_clien
 	*pclient = client;
 	return IRECV_E_SUCCESS;
 }
-
-// nafiz+
-static irecv_error_t libusb_open_with_ecid_nafiz()
-{
-	int i = 0;
-	struct libusb_device *usb_device = NULL;
-	struct libusb_device **usb_device_list = NULL;
-	struct libusb_device_descriptor usb_descriptor;
-
-	int usb_device_count = libusb_get_device_list(libirecovery_context, &usb_device_list);
-	for (i = 0; i < usb_device_count; i++)
-	{
-		usb_device = usb_device_list[i];
-		libusb_get_device_descriptor(usb_device, &usb_descriptor);
-		if (usb_descriptor.idVendor == APPLE_VENDOR_ID)
-		{
-			/* verify this device is in a mode we understand */
-			if (usb_descriptor.idProduct == IRECV_K_RECOVERY_MODE_1 ||
-				usb_descriptor.idProduct == IRECV_K_RECOVERY_MODE_2 ||
-				usb_descriptor.idProduct == IRECV_K_RECOVERY_MODE_3 ||
-				usb_descriptor.idProduct == IRECV_K_RECOVERY_MODE_4 ||
-				// usb_descriptor.idProduct == IRECV_K_WTF_MODE ||
-				usb_descriptor.idProduct == IRECV_K_DFU_MODE ||
-				usb_descriptor.idProduct == IRECV_K_PORT_DFU_MODE ||
-				usb_descriptor.idProduct == KIS_PRODUCT_ID)
-			{
-
-				debug("opening device %04x:%04x...\n", usb_descriptor.idVendor, usb_descriptor.idProduct);
-
-				struct libusb_device_handle *usb_handle = NULL;
-				int libusb_error = libusb_open(usb_device, &usb_handle);
-				if (usb_handle == NULL || libusb_error != 0)
-				{
-					debug("%s: can't connect to device: %s\n", __func__, libusb_error_name(libusb_error));
-
-					libusb_close(usb_handle);
-					continue;
-				}
-
-				irecv_client_t client = (irecv_client_t)malloc(sizeof(struct irecv_client_private));
-				if (client == NULL)
-				{
-					libusb_close(usb_handle);
-					return IRECV_E_OUT_OF_MEMORY;
-				}
-
-				memset(client, '\0', sizeof(struct irecv_client_private));
-				client->usb_interface = 0;
-				client->handle = usb_handle;
-				client->mode = usb_descriptor.idProduct;
-
-				if (client->mode != KIS_PRODUCT_ID)
-				{
-					char serial_str[256];
-					memset(serial_str, 0, 256);
-					irecv_get_string_descriptor_ascii(client, usb_descriptor.iSerialNumber, (unsigned char *)serial_str, 255);
-					irecv_load_device_info_from_iboot_string(client, serial_str);
-				}
-
-				// nafiz+
-				const struct irecv_device_info *devinfo = irecv_get_device_info_nafiz(client);
-				// nafiz+
-				if (devinfo)
-				{
-					printf("%" PRIu64 "\n", devinfo->ecid);
-				}
-			}
-		}
-	}
-	libusb_free_device_list(usb_device_list, 1);
-}
-// nafiz+
 
 static irecv_error_t libusb_open_with_ecid(irecv_client_t *pclient, uint64_t ecid)
 {
@@ -2873,42 +2805,80 @@ static irecv_error_t libusb_open_with_ecid(irecv_client_t *pclient, uint64_t eci
 	libusb_free_device_list(usb_device_list, 1);
 	return ret;
 }
-#endif
-#endif
-#endif
 
-// nafiz+
-irecv_error_t irecv_open_with_ecid_nafiz()
+// nafiz⬇+
+static irecv_error_t libusb_open_with_ecid_nafiz()
 {
-	uint64_t ecid;
-	irecv_client_t pclient = NULL;
+	int i = 0;
+	struct libusb_device *usb_device = NULL;
+	struct libusb_device **usb_device_list = NULL;
+	struct libusb_device_descriptor usb_descriptor;
 
-#ifdef USE_DUMMY
-	return IRECV_E_UNSUPPORTED;
-#else
-
-	if (libirecovery_debug)
+	int usb_device_count = libusb_get_device_list(libirecovery_context, &usb_device_list);
+	for (i = 0; i < usb_device_count; i++)
 	{
-		irecv_set_debug_level(libirecovery_debug);
+		usb_device = usb_device_list[i];
+		libusb_get_device_descriptor(usb_device, &usb_descriptor);
+		if (usb_descriptor.idVendor == APPLE_VENDOR_ID)
+		{
+			/* verify this device is in a mode we understand */
+			if (usb_descriptor.idProduct == IRECV_K_RECOVERY_MODE_1 ||
+				usb_descriptor.idProduct == IRECV_K_RECOVERY_MODE_2 ||
+				usb_descriptor.idProduct == IRECV_K_RECOVERY_MODE_3 ||
+				usb_descriptor.idProduct == IRECV_K_RECOVERY_MODE_4 ||
+				// usb_descriptor.idProduct == IRECV_K_WTF_MODE ||
+				usb_descriptor.idProduct == IRECV_K_DFU_MODE ||
+				usb_descriptor.idProduct == IRECV_K_PORT_DFU_MODE ||
+				usb_descriptor.idProduct == KIS_PRODUCT_ID)
+			{
+
+				debug("opening device %04x:%04x...\n", usb_descriptor.idVendor, usb_descriptor.idProduct);
+
+				struct libusb_device_handle *usb_handle = NULL;
+				int libusb_error = libusb_open(usb_device, &usb_handle);
+				if (usb_handle == NULL || libusb_error != 0)
+				{
+					debug("%s: can't connect to device: %s\n", __func__, libusb_error_name(libusb_error));
+
+					libusb_close(usb_handle);
+					continue;
+				}
+
+				irecv_client_t client = (irecv_client_t)malloc(sizeof(struct irecv_client_private));
+				if (client == NULL)
+				{
+					libusb_close(usb_handle);
+					return IRECV_E_OUT_OF_MEMORY;
+				}
+
+				memset(client, '\0', sizeof(struct irecv_client_private));
+				client->usb_interface = 0;
+				client->handle = usb_handle;
+				client->mode = usb_descriptor.idProduct;
+
+				if (client->mode != KIS_PRODUCT_ID)
+				{
+					char serial_str[256];
+					memset(serial_str, 0, 256);
+					irecv_get_string_descriptor_ascii(client, usb_descriptor.iSerialNumber, (unsigned char *)serial_str, 255);
+					irecv_load_device_info_from_iboot_string(client, serial_str);
+				}
+
+				const struct irecv_device_info *devinfo = irecv_get_device_info_nafiz(client);
+				if (devinfo)
+				{
+					printf("%" PRIu64 "\n", devinfo->ecid);
+				}
+			}
+		}
 	}
-#ifndef _WIN32
-#ifdef HAVE_IOKIT
-	// nafiz+
-	iokit_open_with_ecid_nafiz(pclient, ecid);
-	// nafiz+
-#else
-	// nafiz+
-	libusb_open_with_ecid_nafiz();
-	// nafiz+
-#endif
-#else
-	// nafiz+
-	win32_open_with_ecid_nafiz(pclient, ecid);
-	// nafiz+
-#endif
-#endif
+	libusb_free_device_list(usb_device_list, 1);
 }
-// nafiz+
+// nafiz⬆+
+
+#endif
+#endif
+#endif
 
 irecv_error_t irecv_open_with_ecid(irecv_client_t *pclient, uint64_t ecid)
 {
@@ -3020,6 +2990,33 @@ irecv_error_t irecv_open_with_ecid(irecv_client_t *pclient, uint64_t ecid)
 	return error;
 #endif
 }
+
+// nafiz⬇+
+irecv_error_t irecv_open_with_ecid_nafiz()
+{
+	uint64_t ecid;
+	irecv_client_t pclient = NULL;
+
+#ifdef USE_DUMMY
+	return IRECV_E_UNSUPPORTED;
+#else
+
+	if (libirecovery_debug)
+	{
+		irecv_set_debug_level(libirecovery_debug);
+	}
+#ifndef _WIN32
+#ifdef HAVE_IOKIT
+	iokit_open_with_ecid_nafiz(pclient, ecid);
+#else
+	libusb_open_with_ecid_nafiz();
+#endif
+#else
+	win32_open_with_ecid_nafiz(pclient, ecid);
+#endif
+#endif
+}
+// nafiz⬆+
 
 irecv_error_t irecv_usb_set_configuration(irecv_client_t client, int configuration)
 {
@@ -3491,7 +3488,7 @@ static void *_irecv_handle_device_add(void *userdata)
 			debug("%s: Failed to allocate memory\n", __func__);
 			return NULL;
 		}
-		memset(client, '\0', sizeof(struct irecv_client_private));
+		memset(client, 0, sizeof(struct irecv_client_private));
 		client->handle = CreateFileA(result, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
 		if (client->handle == INVALID_HANDLE_VALUE)
 		{
@@ -3558,12 +3555,10 @@ static void *_irecv_handle_device_add(void *userdata)
 		return NULL;
 	}
 
-	if (product_id == KIS_PRODUCT_ID)
-	{
-		IOObjectRetain(device);
+	if (product_id == KIS_PRODUCT_ID) {
 		int i = 0;
-		for (i = 0; i < 10; i++)
-		{
+		for (i = 0; i < 10; i++) {
+			IOObjectRetain(device);
 			error = iokit_usb_open_service(&client, device);
 			if (error == IRECV_E_SUCCESS)
 			{
@@ -3637,9 +3632,8 @@ static void *_irecv_handle_device_add(void *userdata)
 	}
 #endif /* !HAVE_IOKIT */
 #endif /* !_WIN32 */
-	memset(&client_loc, '\0', sizeof(client_loc));
-	if (product_id == KIS_PRODUCT_ID)
-	{
+	memset(&client_loc, 0, sizeof(client_loc));
+	if (product_id == KIS_PRODUCT_ID) {
 		int i = 0;
 		for (i = 0; i < 10; i++)
 		{
@@ -3921,7 +3915,8 @@ static void *_irecv_event_handler(void *data)
 				return NULL;
 			}
 
-			memset(&currentInterface, '\0', sizeof(SP_DEVICE_INTERFACE_DATA));
+
+			memset(&currentInterface, 0, sizeof(SP_DEVICE_INTERFACE_DATA));
 			currentInterface.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
 			for (i = 0; usbDevices && SetupDiEnumDeviceInterfaces(usbDevices, NULL, guids[k], i, &currentInterface); i++)
 			{
@@ -4581,9 +4576,8 @@ static irecv_error_t irecv_get_status(irecv_client_t client, unsigned int *statu
 	}
 
 	unsigned char buffer[6];
-	memset(buffer, '\0', 6);
-	if (irecv_usb_control_transfer(client, 0xA1, 3, 0, 0, buffer, 6, USB_TIMEOUT) != 6)
-	{
+	memset(buffer, 0, sizeof(buffer));
+	if (irecv_usb_control_transfer(client, 0xA1, 3, 0, 0, buffer, sizeof(buffer), USB_TIMEOUT) != sizeof(buffer)) {
 		*status = 0;
 		return IRECV_E_USB_STATUS;
 	}
@@ -4997,7 +4991,7 @@ irecv_error_t irecv_receive(irecv_client_t client)
 	return IRECV_E_UNSUPPORTED;
 #else
 	char buffer[BUFFER_SIZE];
-	memset(buffer, '\0', BUFFER_SIZE);
+	memset(buffer, 0, BUFFER_SIZE);
 
 	if (check_context(client) != IRECV_E_SUCCESS)
 		return IRECV_E_NO_DEVICE;
@@ -5056,8 +5050,8 @@ irecv_error_t irecv_getenv(irecv_client_t client, const char *variable, char **v
 		return IRECV_E_UNSUPPORTED;
 	}
 
-	memset(command, '\0', sizeof(command));
-	snprintf(command, sizeof(command) - 1, "getenv %s", variable);
+	memset(command, 0, sizeof(command));
+	snprintf(command, sizeof(command)-1, "getenv %s", variable);
 	irecv_error_t error = irecv_send_command_raw(client, command, 0);
 	if (error == IRECV_E_PIPE)
 	{
@@ -5075,8 +5069,8 @@ irecv_error_t irecv_getenv(irecv_client_t client, const char *variable, char **v
 		return IRECV_E_OUT_OF_MEMORY;
 	}
 
-	memset(response, '\0', 256);
-	irecv_usb_control_transfer(client, 0xC0, 0, 0, 0, (unsigned char *)response, 255, USB_TIMEOUT);
+	memset(response, 0, rsize);
+	irecv_usb_control_transfer(client, 0xC0, 0, 0, 0, (unsigned char*) response, rsize-1, USB_TIMEOUT);
 
 	*value = response;
 
@@ -5100,8 +5094,8 @@ irecv_error_t irecv_getret(irecv_client_t client, unsigned int *value)
 		return IRECV_E_OUT_OF_MEMORY;
 	}
 
-	memset(response, '\0', 256);
-	irecv_usb_control_transfer(client, 0xC0, 0, 0, 0, (unsigned char *)response, 255, USB_TIMEOUT);
+	memset(response, 0, rsize);
+	irecv_usb_control_transfer(client, 0xC0, 0, 0, 0, (unsigned char*) response, rsize-1, USB_TIMEOUT);
 
 	*value = (unsigned int)*response;
 
@@ -5123,20 +5117,6 @@ irecv_error_t irecv_get_mode(irecv_client_t client, int *mode)
 #endif
 }
 
-// nafiz+
-const struct irecv_device_info *irecv_get_device_info_nafiz(irecv_client_t client)
-{
-#ifdef USE_DUMMY
-	return NULL;
-#else
-	if (check_context(client) != IRECV_E_SUCCESS)
-		return NULL;
-
-	return &client->device_info;
-#endif
-}
-// nafiz+
-
 const struct irecv_device_info *irecv_get_device_info(irecv_client_t client)
 {
 #ifdef USE_DUMMY
@@ -5148,6 +5128,20 @@ const struct irecv_device_info *irecv_get_device_info(irecv_client_t client)
 	return &client->device_info;
 #endif
 }
+
+// nafiz⬇+
+const struct irecv_device_info *irecv_get_device_info_nafiz(irecv_client_t client)
+{
+#ifdef USE_DUMMY
+	return NULL;
+#else
+	if (check_context(client) != IRECV_E_SUCCESS)
+		return NULL;
+
+	return &client->device_info;
+#endif
+}
+// nafiz⬆+
 
 #ifndef USE_DUMMY
 #ifdef HAVE_IOKIT
@@ -5177,7 +5171,7 @@ irecv_error_t irecv_trigger_limera1n_exploit(irecv_client_t client)
 #ifdef HAVE_IOKIT
 	IOReturn result;
 	IOUSBDevRequestTO req;
-	bzero(&req, sizeof(req));
+	memset(&req, 0, sizeof(req));
 
 	req.bmRequestType = 0x21;
 	req.bRequest = 2;
@@ -5291,8 +5285,8 @@ irecv_error_t irecv_setenv(irecv_client_t client, const char *variable, const ch
 		return IRECV_E_UNKNOWN_ERROR;
 	}
 
-	memset(command, '\0', sizeof(command));
-	snprintf(command, sizeof(command) - 1, "setenv %s %s", variable, value);
+	memset(command, 0, sizeof(command));
+	snprintf(command, sizeof(command)-1, "setenv %s %s", variable, value);
 	irecv_error_t error = irecv_send_command_raw(client, command, 0);
 	if (error != IRECV_E_SUCCESS)
 	{
@@ -5318,8 +5312,8 @@ irecv_error_t irecv_setenv_np(irecv_client_t client, const char *variable, const
 		return IRECV_E_UNKNOWN_ERROR;
 	}
 
-	memset(command, '\0', sizeof(command));
-	snprintf(command, sizeof(command) - 1, "setenvnp %s %s", variable, value);
+	memset(command, 0, sizeof(command));
+	snprintf(command, sizeof(command)-1, "setenvnp %s %s", variable, value);
 	irecv_error_t error = irecv_send_command_raw(client, command, 0);
 	if (error != IRECV_E_SUCCESS)
 	{
